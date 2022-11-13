@@ -7,6 +7,7 @@ from datetime import date
 import pandas as pd
 
 if True:
+    @stl.experimental_memo
     def incredible_data_requestor_full(stockz, time_period, n, d=5, pr='1d'):
         import datetime as DT
         import time
@@ -31,6 +32,8 @@ if True:
 
         return df
 
+
+    @stl.experimental_memo
     def EMA(x, n):
         import numpy as np
         """
@@ -63,6 +66,8 @@ if True:
             ema.append(tmp)
         ema = ema[::-1]
 
+
+    @stl.experimental_memo
     def SuperTrend(df, lb=14, mlt=3.8):
         import numpy as np
 
@@ -177,6 +182,8 @@ if True:
         # print(buy_price, sell_price, st_signal)
         return df_st, buy_price, sell_price, st_signal
 
+
+    @stl.experimental_memo
     def ATR(df, mult):
         """the DF need to be Full"""
         import numpy as np
@@ -191,6 +198,8 @@ if True:
 
         return atr
 
+
+    @stl.experimental_memo
     def ATR_SL(df, mult):
         """the DF need to be Full"""
         import numpy as np
@@ -205,6 +214,8 @@ if True:
 
         return atr
 
+
+    @stl.experimental_memo
     def TMA(df, ws):
         df = df
         df = pd.DataFrame(df)
@@ -214,6 +225,7 @@ if True:
         df = df.rolling(window=ws, center=False).mean()
         return df
 
+    @stl.experimental_memo
     def MA(x, ws):
         """
         :param x: una lista di numeri
