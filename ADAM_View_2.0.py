@@ -1,13 +1,68 @@
 """ ADAM Visions """
-import ADAM as ad
+
 import streamlit as stl
-import matplotlib.pyplot as plt
 import yfinance
 from plotly import graph_objects as go
 from datetime import date
 import pandas as pd
 
 if True:
+    def incredible_data_requestor_full(stockz, time_period, n, d=5, pr='1d'):
+        import datetime as DT
+        import time
+        dff = []
+        loop = n
+        i = 1
+        while i < (loop + 1):
+            today = DT.date.today()
+            endDate = today - DT.timedelta(days=d * (i - 1))
+            startDate = today - DT.timedelta(days=d * i)
+            df = yfinance.download(stockz, interval=time_period, start=startDate, end=endDate)
+            if i == 1:
+                df = yfinance.download(stockz, interval=time_period, period=pr, prepost=True)
+            print(endDate)
+            print(startDate)
+            print(df)
+            df = df[::-1]
+            dff.extend(df)
+            time.sleep(1)
+            print('cicle = ', i)
+            i += 1
+
+        return df
+
+    def EMA(x, n):
+        import numpy as np
+        """
+        returns an n period exponential moving average for
+        the time series s
+
+        s is a list ordered from oldest (index 0) to most
+        recent (index -1)
+        n is an integer
+
+        returns a numeric array of the exponential
+        moving average
+        """
+        x = np.array(x)
+        ema = []
+        j = 1
+
+        # get n sma first and calculate the next n period ema
+        sma = sum(x[:n]) / n
+        multiplier = 2 / float(1 + n)
+        ema.append(sma)
+
+        # EMA(current) = ( (Price(current) - EMA(prev) ) x Multiplier) + EMA(prev)
+        ema.append(((x[n] - sma) * multiplier) + sma)
+
+        # now calculate the rest of the values
+        for i in x[n + 1:]:
+            tmp = ((i - ema[j]) * multiplier) + ema[j]
+            j = j + 1
+            ema.append(tmp)
+        ema = ema[::-1]
+
     def SuperTrend(df, lb=14, mlt=3.8):
         import numpy as np
 
@@ -122,6 +177,64 @@ if True:
         # print(buy_price, sell_price, st_signal)
         return df_st, buy_price, sell_price, st_signal
 
+    def ATR(df, mult):
+        """the DF need to be Full"""
+        import numpy as np
+        data = df
+        high_low = data['High'] - data['Low']
+        high_close = np.abs(data['High'] - data['Close'].shift())
+        low_close = np.abs(data['Low'] - data['Close'].shift())
+        ranges = pd.concat([high_low, high_close, low_close], axis=1)
+        true_range = np.max(ranges, axis=1)
+        atr = true_range.rolling(mult).sum() / mult
+        atr = list(atr)
+
+        return atr
+
+    def ATR_SL(df, mult):
+        """the DF need to be Full"""
+        import numpy as np
+        data = df
+        high_low = data['High'] - data['Low']
+        high_close = np.abs(data['High'] - data['Close'].shift())
+        low_close = np.abs(data['Low'] - data['Close'].shift())
+        ranges = pd.concat([high_low, high_close, low_close], axis=1)
+        true_range = np.max(ranges, axis=1)
+        atr = EMA(true_range, mult)
+        atr = list(atr)
+
+        return atr
+
+    def TMA(df, ws):
+        df = df
+        df = pd.DataFrame(df)
+        print(df)
+        # df['mean0']=df.mean(0)
+        df = df.mean(1)
+        df = df.rolling(window=ws, center=False).mean()
+        return df
+
+    def MA(x, ws):
+        """
+        :param x: una lista di numeri
+        :param ws: la lunghezza
+        :return: una lista
+        """
+        import numpy as np
+        # x = x[::-1]
+        import pandas as pd
+        window_sizes = ws
+        series = pd.Series(x)
+        windows = series.rolling(window_sizes)
+        MA = windows.mean()
+        MA_list = MA.tolist()
+        FMA = MA_list[window_sizes - 1:]
+        FMA = list(FMA)
+        for i in range(ws - 1): FMA.insert(i, x[i])
+        FMA = FMA[::-1]
+
+        return FMA
+
 START = "2022-10-01"
 END = date.today().strftime("%Y-%m-%d")
 
@@ -146,28 +259,28 @@ MA2se = stl.checkbox('ad MA 2?')
 Stse = stl.checkbox("Super Trend?")
 if Stse:
     EtichetteST = stl.checkbox('Etichette ST?')
-    dffull = ad.incredible_data_requestor_full(stock, time_period, 1, pr=tipe)
-ATRse = stl.checkbox("double ATR?")
+    dffull = incredible_data_requestor_full(stock, time_period, 1, pr=tipe)
+#ATRse = stl.checkbox("double ATR?")
 TMAse = stl.checkbox("TMAs?")
 if MA1se:
     MA1_Lenght = int(stl.slider("adMA short Lenght", 1, 200))
-    MA1 = ad.MA(df, MA1_Lenght)[::-1]
+    MA1 = MA(df, MA1_Lenght)[::-1]
 if MA2se:
     MA2_Lenght = int(stl.slider("adMA2 long Lenght", 1, 200))
-    MA2 = ad.MA(df, MA2_Lenght)[::-1]
+    MA2 = MA(df, MA2_Lenght)[::-1]
 if Stse:
     ST_M = int(stl.slider("ST period", 1, 60))
     ST_P = float(stl.slider("ST Multiplier", 1.0, 6.0))
     df_st, buy_price, sell_price, st_signal = SuperTrend(dffull, ST_P, ST_M)
 if TMAse:
     TMAs_Lenght = int(stl.slider('TMA Lenght', 1, 200))
-    TMA = ad.TMA(df, TMAs_Lenght)
+    TMA = TMA(df, TMAs_Lenght)
     TMA = list(TMA)
     TMADOWN = []
     TMAUP = []
     ATR_PERIOD = 120
     ATR_MULT = 1.8
-    atr = ad.ATR(dff, ATR_PERIOD)
+    atr = ATR(dff, ATR_PERIOD)
     rangee = []
     for i in range(len(atr)):
         rangee.append(atr[i] * ATR_MULT)
@@ -181,11 +294,11 @@ stl.write('Puoi ingrandire il grafico')
 
 if Filtring:
     MA3_Lenght = int(stl.slider("adMA filter Lenght", 1, 200))
-    MA3 = ad.MA(df, MA3_Lenght)[::-1]
+    MA3 = MA(df, MA3_Lenght)[::-1]
 
 if ATRse:
-    x1 = ad.ATR_SL(dff, 9)
-    x2 = ad.ATR_SL(dff, 9)
+    x1 = ATR_SL(dffull, 9)
+    x2 = ATR_SL(dffull, 9)
     xx1 = []
     xx2 = []
     for i in range(len(x1)):
