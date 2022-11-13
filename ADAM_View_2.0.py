@@ -269,6 +269,7 @@ Filtring = stl.checkbox('Usare Filtro?')
 MA1se = stl.checkbox('ad MA 1?')
 MA2se = stl.checkbox('ad MA 2?')
 Stse = stl.checkbox("Super Trend?")
+ATRse = False
 if Stse:
     EtichetteST = stl.checkbox('Etichette ST?')
     dffull = incredible_data_requestor_full(stock, time_period, 1, pr=tipe)
